@@ -197,3 +197,119 @@ public class ScrollingBackgroundParallaxB : MonoBehaviour
 
 ![3  Ejercicio 3b](https://github.com/user-attachments/assets/cd04954f-cf0e-4609-82bc-70c067af4aa9)
 
+## 4. En tu escena 2D crea un prefab que sirva de base para generar un tipo de objetos sobre los que vas a hacer un pooling de objetos que se recolectarán continuamente en tu escena. Cuando un objeto es recolectado debe pasar al pool y dejar de visualizarse. Este objeto estará disponible en el pool. Cada objeto debe llevar un contador, cuando alcance 3 será destruido. En la escena, siempre que sea posible debe haber una cantidad de objetos que fijes, hasta que el número de objetos que no se han eliminado sea menor que dicha cantidad. Recuerda que para generar los objetos puedes usar el método Instantiate. Los objetos ya creados pueden estar activos o no, para ello usar SetActive.
+
+Creamos un objeto vacío que hará de pool de objetos. Este objeto tendrá un script con las siguientes variables:
+
+* `[SerializeField] private Item _itemPrefab`: será el prefab a instanciar. Dicha instancia será incluida en el pool.
+* `[SerializeField] private int _spawnAmount`: la cantidad de objetos a instanciar.
+* `[SerializeField] private float _repeatRate`: intervalo de tiempo entre la activación de un objeto del pool y otro.
+
+* `private List<Item> _itemPool`: pool de objetos.
+* `private int _currentItemIndex`: índice en el pool del objeto actual.
+
+Nada más comenzar la ejecución del juego, se inicializará el pool de objetos y, luego, cada `X` segundos se activará un objeto distinto del pool.
+
+```cs
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Spawner : MonoBehaviour
+{
+    [SerializeField] private Item _itemPrefab;
+    [SerializeField] private int _spawnAmount = 3;
+    [SerializeField] private float _repeatRate = 2.5f;
+
+    private List<Item> _itemPool;
+    private int _currentItemIndex;
+    
+    private void Start()
+    {
+        InitItemPool();
+    }
+
+    private void InitItemPool()
+    {
+        _itemPool = new List<Item>();
+
+        for (int i = 0; i < _spawnAmount; i++)
+        {
+            _itemPool.Add(Instantiate(_itemPrefab, transform));
+            _itemPool[i].gameObject.SetActive(false);
+        }
+        
+        InvokeRepeating(nameof(SetPooledItemActive), 0, _repeatRate);
+    }
+
+    private void SetPooledItemActive()
+    {
+        
+        if (_currentItemIndex < _itemPool.Count)
+        {
+            _itemPool[_currentItemIndex].gameObject.SetActive(true);
+            
+            _currentItemIndex++;
+        }
+        else
+            _currentItemIndex = 0;
+    }
+
+    public void UnsubscribeItem(Item item)
+    {
+        _itemPool.Remove(item);
+    }
+}
+```
+
+Por otra parte, los items del pool tienen un script que se encarga de moverlos hacia la izquierda constantemente. Cuando estos colisionan con el jugador, se desactivarán y su contador interno incrementará. Si este contador llega a 3, serán eliminados del pool y de la escena.
+
+```cs
+using UnityEngine;
+using Vector3 = UnityEngine.Vector3;
+
+public class Item : MonoBehaviour
+{
+    [SerializeField] private float _moveSpeed = 1.0f;
+
+    private int _timesCollected;
+
+    private Spawner _spawner;
+
+    private void Start()
+    {
+        _spawner = GetComponentInParent<Spawner>();
+    }
+
+
+    private void Update()
+    {
+        transform.Translate(Vector3.left * (_moveSpeed * Time.deltaTime), Space.World);
+    }
+
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        if (other.gameObject.CompareTag("Player"))
+        {
+            _timesCollected++;
+
+            if (_timesCollected == 3)
+            {
+                _spawner.UnsubscribeItem(this);
+                Destroy(gameObject);
+            }
+            else
+            {
+                gameObject.SetActive(false);
+                transform.localPosition = Vector3.zero;
+            }
+        }
+    }
+}
+```
+
+![4  Ejercicio 4](https://github.com/user-attachments/assets/46f3f31f-6866-45ae-b889-c94cf67b9c71)
+
+## 5. Revisa tu código de la entrega anterior e indica las mejoras que podrías hacer de cara al rendimiento.
+
+1. En la escena hay varios objetos que no se mueven. Estos podrían marcarse como `Static`.
+2. En el script `OneDirectionMovement.cs`, se crea un `Vector3` en el método `Update()` de la siguiente manera: `new Vector3(1, 1, 0)`. Para evitar crear nuevos vectores en cada frame, se podría haber extraído ese `Vector3` en una variable al comienzo del script: `private Vector3 _topRight = new Vector3(1, 1, 0)`.
