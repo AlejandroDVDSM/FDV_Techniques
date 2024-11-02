@@ -313,3 +313,8 @@ public class Item : MonoBehaviour
 
 1. En la escena hay varios objetos que no se mueven. Estos podrían marcarse como `Static`.
 2. En el script `OneDirectionMovement.cs`, se crea un `Vector3` en el método `Update()` de la siguiente manera: `new Vector3(1, 1, 0)`. Para evitar crear nuevos vectores en cada frame, se podría haber extraído ese `Vector3` en una variable al comienzo del script: `private Vector3 _topRight = new Vector3(1, 1, 0)`.
+
+
+## Créditos
+
+[Free Pixel Art Forest by edermunizz](https://edermunizz.itch.io/free-pixel-art-forest)
